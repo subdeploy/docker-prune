@@ -13,7 +13,6 @@ services:
       FILTER_CONTAINER_UNTIL_HOURS: "120"
       FILTER_NETWORK_UNTIL_HOURS: "120"
       FILTER_IMAGE_UNTIL_HOURS: "120"
-      TZ: "UTC"
     deploy:
       replicas: 1
       restart_policy:

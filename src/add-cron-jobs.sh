@@ -2,8 +2,9 @@
 
 CRON_TEMPLATE='${MM} ${HH} * * * ${CMD}'
 
-CRON_JOBS_DIR="$(pwd)/cron_jobs"
-mkdir -p $CRON_JOBS_DIR
+# Create crontab file
+CRONTAB_FILE="crontab"
+touch CRONTAB_FILE
 
 echo "Add cron jobs:"
 NODES=$(docker node ls --format "{{.Hostname}}")
@@ -13,19 +14,18 @@ for NODE in $NODES ; do
   SERVICE_NAME="${STACK_NAME}_${SERVICE}"
   CMD="sh $(pwd)/run-prune-service.sh $SERVICE_NAME"
   HH=$PRUNE_HOUR
-  MM=$(($i*$NODE_SPACING_MINUTES))
-
-  # Create cron config file
-  CRON_JOB_FILE="$CRON_JOBS_DIR/$SERVICE-cron"
-  echo "$CRON_TEMPLATE" | sed -e "s|\${CMD}|$CMD|g" -e "s|\${HH}|$HH|g" -e "s|\${MM}|$MM|g" >> $CRON_JOB_FILE
-  echo >> $CRON_JOB_FILE # newline required @EOF
-
-  # Grant exec rights
-  chmod 0644 $CRON_JOB_FILE
-
-  # Apply cron job to crontab
-  echo "$(cat $CRON_JOB_FILE)" | sed 's/^/  /'
-  /usr/bin/crontab $CRON_JOB_FILE
-
+  MM=$((($i*$NODE_SPACING_MINUTES)%60))
   i=$((i+1))
+
+  # append to crontab file
+  echo "$CRON_TEMPLATE" | sed -e "s|\${MM}|$MM|g" -e "s|\${HH}|$HH|g" -e "s|\${CMD}|$CMD|g" >> $CRONTAB_FILE
 done
+
+# Grant exec rights
+chmod 0644 $CRONTAB_FILE
+
+echo "$(cat $CRONTAB_FILE)" | sed 's/^/  /'
+echo "" >> $CRONTAB_FILE # newline required @EOF
+
+# Apply cron job to crontab
+/usr/bin/crontab $CRONTAB_FILE
