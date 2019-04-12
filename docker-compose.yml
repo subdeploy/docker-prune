@@ -1,0 +1,23 @@
+version: '3.6'
+
+services:
+  cron:
+    image: subdeploy/docker-prune
+    build: .
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      STACK_NAME: "${STACK_NAME:-docker-prune}"
+      PRUNE_HOUR: ${PRUNE_HOUR:-8}
+      NODE_SPACING_MINUTES: 5
+      FILTER_CONTAINER_UNTIL_HOURS: "120"
+      FILTER_NETWORK_UNTIL_HOURS: "120"
+      FILTER_IMAGE_UNTIL_HOURS: "120"
+      TZ: "UTC"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: none
+      placement:
+        constraints:
+          - node.role == manager
