@@ -21,4 +21,10 @@ exec_cmd "docker container prune -f $(get_filters $CONTAINER_FILTERS)"
 exec_cmd "docker network prune -f $(get_filters $NETWORK_FILTERS)"
 exec_cmd "docker image prune -af $(get_filters $IMAGE_FILTERS)"
 
+# In Global mode, if containers exit too soon then swarm will abort the service update.
+NODES=$(docker node ls --format "{{.Hostname}}")
+SLEEP=$(($(echo "$NODES" | wc -l)*3))
+echo "sleeping $SLEEP seconds before exit to ensure a successful rolling service update."
+sleep $SLEEP
+
 exit 0
