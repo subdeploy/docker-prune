@@ -7,16 +7,30 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      STACK_NAME: "${STACK_NAME:-docker-prune}"
-      PRUNE_HOUR: ${PRUNE_HOUR:-8}
-      NODE_SPACING_MINUTES: 5
-      FILTER_CONTAINER_UNTIL_HOURS: "120"
-      FILTER_NETWORK_UNTIL_HOURS: "120"
-      FILTER_IMAGE_UNTIL_HOURS: "120"
+      ROLE: "cron"
+      CRON_SCHEDULE: "0 8 * * *"
+      SERVICE_NAME: "{{.Service.Name}}"
     deploy:
       replicas: 1
       restart_policy:
-        condition: none
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
       placement:
         constraints:
           - node.role == manager
+  job:
+    image: subdeploy/docker-prune
+    build: .
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      ROLE: "job"
+      CONTAINER_FILTERS: '["until=120h","label!=keep"]'
+      NETWORK_FILTERS: '["until=120h","label!=keep"]'
+      IMAGE_FILTERS: '["until=120h","label!=keep"]'
+    deploy:
+      mode: global
+      restart_policy:
+        condition: none
